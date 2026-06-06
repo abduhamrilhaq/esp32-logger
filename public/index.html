@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESP32 Sensor Logger</title>
+  <title>ESP32 Perkebunan Cabe Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,15 +11,15 @@
     header { background: #1e293b; padding: 16px 24px; border-bottom: 1px solid #334155; }
     header h1 { font-size: 1.4rem; color: #38bdf8; }
     header span { font-size: 0.8rem; color: #64748b; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
 
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
     .stat-card { background: #1e293b; border-radius: 12px; padding: 16px; text-align: center; border: 1px solid #334155; }
-    .stat-card .val { font-size: 2rem; font-weight: 700; color: #38bdf8; }
-    .stat-card .lbl { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+    .stat-card .val { font-size: 1.8rem; font-weight: 700; color: #38bdf8; }
+    .stat-card .lbl { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
 
-    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-    @media(max-width: 640px) { .charts { grid-template-columns: 1fr; } }
+    /* Layout 3 Chart Responsif */
+    .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .chart-card { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; }
     .chart-card h3 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 12px; }
 
@@ -27,55 +27,66 @@
     .table-card h3 { font-size: 0.9rem; color: #94a3b8; margin-bottom: 12px; }
     .tbl-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th { background: #0f172a; color: #64748b; padding: 8px 12px; text-align: left; }
-    td { padding: 8px 12px; border-top: 1px solid #334155; }
+    th { background: #0f172a; color: #64748b; padding: 10px 12px; text-align: left; }
+    td { padding: 10px 12px; border-top: 1px solid #334155; }
     tr:hover td { background: #0f172a; }
-    .badge { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-    .badge.on  { background: #fef08a22; color: #fde047; border: 1px solid #fde04755; }
-    .badge.off { background: #94a3b822; color: #94a3b8; border: 1px solid #94a3b833; }
+    
+    /* Desain Badge Relay Multi-Channel */
+    .badge-container { display: flex; gap: 6px; }
+    .badge { padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .badge.on  { background: #22c55e22; color: #4ade80; border: 1px solid #4ade8044; }
+    .badge.off { background: #64748b22; color: #94a3b8; border: 1px solid #64748b33; }
 
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; }
+    select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; outline: none; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
   </style>
 </head>
 <body>
 <header>
-  <h1>📡 ESP32 Sensor Logger</h1>
-  <span><span class="dot"></span>Live — refresh tiap 15 detik</span>
+  <h1>🌱 ESP32 Cabe Logger & Smart Farm Dashboard</h1>
+  <span><span class="dot"></span>Live — Auto-refresh tiap 15 detik</span>
 </header>
 
 <div class="container">
-  <!-- Stats -->
   <div class="stats">
-    <div class="stat-card"><div class="val" id="s-total">—</div><div class="lbl">Total Data</div></div>
-    <div class="stat-card"><div class="val" id="s-avg-suhu">—</div><div class="lbl">Rata Suhu °C</div></div>
-    <div class="stat-card"><div class="val" id="s-max-suhu">—</div><div class="lbl">Maks Suhu °C</div></div>
-    <div class="stat-card"><div class="val" id="s-avg-hum">—</div><div class="lbl">Rata Kelembaban %</div></div>
-    <div class="stat-card"><div class="val" id="s-relay">—</div><div class="lbl">Relay Aktif</div></div>
+    <div class="stat-card"><div class="val" id="s-total">—</div><div class="lbl">Total Sampel Data</div></div>
+    <div class="stat-card"><div class="val" id="s-avg-suhu">—</div><div class="lbl">Rerata Suhu Udara</div></div>
+    <div class="stat-card"><div class="val" id="s-avg-hum">—</div><div class="lbl">Kelembaban Udara (RH)</div></div>
+    <div class="stat-card"><div class="val" id="s-avg-tanah" style="color: #10b981;">—</div><div class="lbl">Rerata Kadar Air Tanah</div></div>
+    <div class="stat-card"><div class="val" id="s-r1" style="color: #eab308;">—</div><div class="lbl">Siram Jadwal (R1)</div></div>
+    <div class="stat-card"><div class="val" id="s-r2" style="color: #a855f7;">—</div><div class="lbl">Siram Otomatis (R2)</div></div>
   </div>
 
-  <!-- Charts -->
   <div class="charts">
-    <div class="chart-card"><h3>🌡 Suhu (°C)</h3><canvas id="chartSuhu"></canvas></div>
-    <div class="chart-card"><h3>💧 Kelembaban (%)</h3><canvas id="chartHum"></canvas></div>
+    <div class="chart-card"><h3>🌡 Suhu Lingkungan (°C)</h3><canvas id="chartSuhu"></canvas></div>
+    <div class="chart-card"><h3>💧 Kelembaban Udara (%)</h3><canvas id="chartHum"></canvas></div>
+    <div class="chart-card"><h3>🪵 Kelembaban Tanah (%)</h3><canvas id="chartTanah"></canvas></div>
   </div>
 
-  <!-- Table -->
   <div class="table-card">
     <div class="toolbar">
-      <h3>📋 Log Data</h3>
+      <h3>📋 Log Riwayat Data Telemetri</h3>
       <select id="limitSelect" onchange="fetchData()">
-        <option value="50">50 data</option>
-        <option value="100" selected>100 data</option>
-        <option value="500">500 data</option>
-        <option value="1000">1000 data</option>
+        <option value="50">50 baris</option>
+        <option value="100" selected>100 baris</option>
+        <option value="500">500 baris</option>
+        <option value="1000">1000 baris</option>
       </select>
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>#</th><th>Timestamp</th><th>Suhu</th><th>Kelembaban</th><th>Relay</th></tr></thead>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Waktu Log</th>
+            <th>Suhu Udara</th>
+            <th>Kelembaban Udara</th>
+            <th>Kelembaban Tanah</th>
+            <th>Status Aktuator (Relay)</th>
+          </tr>
+        </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
@@ -83,74 +94,114 @@
 </div>
 
 <script>
-  let chartSuhu, chartHum;
+  let chartSuhu, chartHum, chartTanah;
 
   function initCharts() {
-    const opts = (color) => ({
+    const makeOptions = () => ({
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#64748b', maxTicksLimit: 6 }, grid: { color: '#1e293b' } },
-        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+        x: { ticks: { color: '#64748b', maxTicksLimit: 5 }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' }, min: 0 }
       },
-      elements: { point: { radius: 2 } }
+      elements: { point: { radius: 1.5 }, line: { tension: 0.35 } }
     });
 
     chartSuhu = new Chart(document.getElementById('chartSuhu'), {
       type: 'line',
-      data: { labels: [], datasets: [{ data: [], borderColor: '#f87171', backgroundColor: '#f8717122', fill: true, tension: 0.4 }] },
-      options: opts('#f87171')
+      data: { labels: [], datasets: [{ data: [], borderColor: '#f87171', backgroundColor: '#f8717115', fill: true }] },
+      options: makeOptions()
     });
 
     chartHum = new Chart(document.getElementById('chartHum'), {
       type: 'line',
-      data: { labels: [], datasets: [{ data: [], borderColor: '#38bdf8', backgroundColor: '#38bdf822', fill: true, tension: 0.4 }] },
-      options: opts('#38bdf8')
+      data: { labels: [], datasets: [{ data: [], borderColor: '#38bdf8', backgroundColor: '#38bdf815', fill: true }] },
+      options: makeOptions()
+    });
+
+    chartTanah = new Chart(document.getElementById('chartTanah'), {
+      type: 'line',
+      data: { labels: [], datasets: [{ data: [], borderColor: '#34d399', backgroundColor: '#34d39915', fill: true }] },
+      options: makeOptions()
     });
   }
 
   async function fetchStats() {
-    const r = await fetch('/api/stats');
-    const d = await r.json();
-    document.getElementById('s-total').textContent    = d.total_data;
-    document.getElementById('s-avg-suhu').textContent = d.avg_suhu + '°';
-    document.getElementById('s-max-suhu').textContent = d.max_suhu + '°';
-    document.getElementById('s-avg-hum').textContent  = d.avg_kelembaban + '%';
-    document.getElementById('s-relay').textContent    = d.total_relay_on + 'x';
+    try {
+      const r = await fetch('/api/stats');
+      const d = await r.json();
+      document.getElementById('s-total').textContent     = d.total_data || 0;
+      document.getElementById('s-avg-suhu').textContent  = (d.avg_suhu || 0) + ' °C';
+      document.getElementById('s-avg-hum').textContent   = (d.avg_kelembaban || 0) + ' %';
+      document.getElementById('s-avg-tanah').textContent = (d.avg_tanah || 0) + ' %';
+      document.getElementById('s-r1').textContent        = (d.total_siram_jadwal || 0) + ' x';
+      document.getElementById('s-r2').textContent        = (d.total_siram_otomatis || 0) + ' x';
+    } catch (e) {
+      console.error("Gagal memuat statistik backend:", e);
+    }
   }
 
   async function fetchData() {
-    const limit = document.getElementById('limitSelect').value;
-    const r = await fetch(`/api/data?limit=${limit}`);
-    const rows = await r.json();
+    try {
+      const limit = document.getElementById('limitSelect').value;
+      const r = await fetch(`/api/data?limit=${limit}`);
+      const rows = await r.json();
 
-    // Chart pakai 50 data terbaru (dibalik biar kronologis)
-    const chartData = [...rows].reverse().slice(-50);
-    const labels = chartData.map(r => new Date(r.timestamp).toLocaleTimeString('id-ID'));
-    chartSuhu.data.labels = labels;
-    chartSuhu.data.datasets[0].data = chartData.map(r => r.suhu);
-    chartSuhu.update();
-    chartHum.data.labels = labels;
-    chartHum.data.datasets[0].data = chartData.map(r => r.kelembaban);
-    chartHum.update();
+      // Olah urutan data kronologis untuk visualisasi grafik (maksimal 40 titik terakhir)
+      const chartData = [...rows].reverse().slice(-40);
+      const labels = chartData.map(item => new Date(item.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}));
+      
+      chartSuhu.data.labels = labels;
+      chartSuhu.data.datasets[0].data = chartData.map(item => item.suhu);
+      chartSuhu.update();
 
-    // Tabel
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = rows.map((r, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${new Date(r.timestamp).toLocaleString('id-ID')}</td>
-        <td>${r.suhu} °C</td>
-        <td>${r.kelembaban} %</td>
-        <td><span class="badge ${r.relay === 'ON' ? 'on' : 'off'}">${r.relay}</span></td>
-      </tr>
-    `).join('');
+      chartHum.data.labels = labels;
+      chartHum.data.datasets[0].data = chartData.map(item => item.kelembaban);
+      chartHum.update();
+
+      chartTanah.data.labels = labels;
+      chartTanah.data.datasets[0].data = chartData.map(item => item.tanah);
+      chartTanah.update();
+
+      // Render Tabel Komponen Log
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = rows.map((item, index) => {
+        // Deteksi parsing string relay gabungan "R1:ON|R2:OFF" atau fallback lama
+        const rawString = item.relay || "R1:OFF|R2:OFF";
+        const isR1On = rawString.includes("R1:ON");
+        const isR2On = rawString.includes("R2:ON");
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${new Date(item.timestamp).toLocaleString('id-ID')}</td>
+            <td>${item.suhu} °C</td>
+            <td>${item.kelembaban} %</td>
+            <td style="color: #34d399; font-weight: 600;">${item.tanah} %</td>
+            <td>
+              <div class="badge-container">
+                <span class="badge ${isR1On ? 'on' : 'off'}">R1 (Jadwal): ${isR1On ? 'ON' : 'OFF'}</span>
+                <span class="badge ${isR2On ? 'on' : 'off'}">R2 (Tanah): ${isR2On ? 'ON' : 'OFF'}</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error("Gagal memuat log telemetri tabel:", e);
+    }
   }
 
+  // Eksekusi awal saat dokumen siap
   initCharts();
   fetchStats();
   fetchData();
-  setInterval(() => { fetchStats(); fetchData(); }, 15000);
+  
+  // Pengulangan background fetch otomatis
+  setInterval(() => { 
+    fetchStats(); 
+    fetchData(); 
+  }, 15000);
 </script>
 </body>
 </html>
